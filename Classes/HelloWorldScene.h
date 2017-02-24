@@ -17,9 +17,12 @@ class HelloWorld : public cocos2d::Layer
     
     std::list<CatInfo> catInfosForSaving;
     std::list<CatInfo> catInfosForLoading;
+    
+    cocos2d::Sprite* panelCatSpr;
 public:
     enum eModeType{ PLAYING, SAVING };
     enum eTouchType{ RED, BLUE };
+    enum eComboType{ NONE, GOOD, EXCELLENT, PERFECT };
     
     static cocos2d::Scene* createScene();
 
@@ -35,6 +38,8 @@ public:
     void makeCatInRoad(float initPosY, eTouchType type);
     void loadCatInfoCsv();
     void saveCatInfoCsv();
+    
+    eComboType checkComboInPanel(cocos2d::Vec2 catPos);
     
     void updateCat(float dt);
     // implement the "static create()" method manually

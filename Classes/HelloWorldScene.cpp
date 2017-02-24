@@ -4,6 +4,7 @@
 
 USING_NS_CC;
 using namespace ui;
+using namespace CocosDenshion;
 
 Scene* HelloWorld::createScene()
 {
@@ -95,6 +96,11 @@ bool HelloWorld::init()
     
     timer = 0.0;
 
+    panelCatSpr = Sprite::create("cat.png");
+    
+    panelCatSpr->setPosition(panelCatSpr->getContentSize().width*0.5,visibleSize.height*0.5);
+    
+    addChild(panelCatSpr);
     
     auto descriptionLabel = Label::createWithTTF("PLAY mode가 되면 자동으로 edit 된 내용이 저장됩니다!", "fonts/arial.ttf", 30.0f);
     
@@ -116,16 +122,9 @@ bool HelloWorld::init()
     });
     addChild(modeChangeButton);
     
-    auto saveBtn = Button::create("CloseNormal.png");
-    
-    saveBtn->setPosition(Vec2(visibleSize.width*0.5,saveBtn->getContentSize().height));
-    
-    saveBtn->addClickEventListener([&](Ref* sender) {
-        saveCatInfoCsv();
-    });
-    addChild(saveBtn);
-    
     loadCatInfoCsv();
+    
+    SimpleAudioEngine::getInstance()->playBackgroundMusic("background.mp3",true);
     
     return true;
 }
@@ -151,7 +150,7 @@ void HelloWorld::saveCatInfoCsv()
     for(const auto& info : catInfosForSaving)
         newInfos.push_back(info);
 
-    data.copy((unsigned char*) newInfos.data(), catInfosForSaving.size() * sizeof(CatInfo));
+    data.copy((unsigned char*) newInfos.data(), newInfos.size() * sizeof(CatInfo));
     
     FileUtils::getInstance()->writeDataToFile(data, fullPath);
     
@@ -214,6 +213,9 @@ void HelloWorld::makeCatInRoad(float initPosY, eTouchType type)
     else if(type == eTouchType::BLUE)
         spr->setColor(Color3B::BLUE);
     
+    spr->setName("gen_cat");
+    spr->setTag(type);
+    
     auto visibleSize = Director::getInstance()->getVisibleSize();
     
     auto sprSize = spr->getContentSize();
@@ -272,6 +274,61 @@ void HelloWorld::touchScreen(eTouchType type)
 
         timer = 0.0;
     }
+    else if(modeLabel->getTag() == eModeType::PLAYING)
+    {
+        for(auto &child : this->getChildren())
+        {
+            if(child->getName() == "gen_cat" && child->getTag() == type) //생성된 cat이고, 터치한 색깔이 일치했을 경우
+            {
+                bool isItCombo = true;
+                
+                switch(checkComboInPanel(child->getPosition()))
+                {
+                    case eComboType::GOOD:
+                        log("good!!!");
+                        break;
+                    case eComboType::EXCELLENT:
+                        log("excellent!!!");
+                        break;
+                    case eComboType::PERFECT:
+                        log("perfect!!!");
+                        break;
+                    default:
+                        isItCombo = false;
+                }
+                
+                if(isItCombo)
+                {
+                    child->setVisible(false);
+                    log("color : %d",child->getTag());
+                    break; //한 번에 두개 없애기 방지
+                }
+            }
+        }
+        if(type == eTouchType::RED)
+        {
+            
+        }
+        else
+        {
+            
+        }
+    }
+}
+
+HelloWorld::eComboType HelloWorld::checkComboInPanel(Vec2 catPos)
+{
+    float dist = fabs(panelCatSpr->getPositionX() - catPos.x);
+    float panelWidth = panelCatSpr->getContentSize().width;
+    
+    if(dist > panelWidth)
+        return NONE;
+    else if(dist > panelWidth*0.5)
+        return GOOD;
+    else if(dist > panelWidth*0.3)
+        return EXCELLENT;
+    else
+        return PERFECT;
 }
 
 void HelloWorld::menuCloseCallback(Ref* pSender)
