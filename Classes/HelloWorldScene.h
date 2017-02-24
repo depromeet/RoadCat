@@ -12,11 +12,13 @@ struct CatInfo
 class HelloWorld : public cocos2d::Layer
 {
     double timer;
-    double loadTimer;
-    int mode; //play,edit mode
-    std::list<CatInfo> catInfos;
+    
+    cocos2d::Label* modeLabel;
+    
+    std::list<CatInfo> catInfosForSaving;
+    std::list<CatInfo> catInfosForLoading;
 public:
-    enum eModeType{ PLAY, EDIT };
+    enum eModeType{ PLAYING, SAVING };
     enum eTouchType{ RED, BLUE };
     
     static cocos2d::Scene* createScene();
@@ -24,11 +26,13 @@ public:
     virtual bool init();
     
     // a selector callback
+    void modeChange();
     void menuCloseCallback(cocos2d::Ref* pSender);
     
     void update(float dt);
     void touchScreen(eTouchType type);
     
+    void makeCatInRoad(float initPosY, eTouchType type);
     void loadCatInfoCsv();
     void saveCatInfoCsv();
     

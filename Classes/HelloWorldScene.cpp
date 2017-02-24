@@ -2,7 +2,6 @@
 #include "SimpleAudioEngine.h"
 #include "ui/CocosGUI.h"
 
-
 USING_NS_CC;
 using namespace ui;
 
@@ -95,9 +94,27 @@ bool HelloWorld::init()
     _eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
     
     timer = 0.0;
-    loadTimer = 0.0;
+
     
-    scheduleUpdate();
+    auto descriptionLabel = Label::createWithTTF("PLAY mode가 되면 자동으로 edit 된 내용이 저장됩니다!", "fonts/arial.ttf", 30.0f);
+    
+    modeLabel = Label::createWithTTF("PLAY mode", "fonts/arial.ttf", 30.0f);
+    modeLabel->setTag(eModeType::PLAYING);
+    
+    descriptionLabel->setPosition(visibleSize.width*0.5, visibleSize.height*0.5+200);
+    
+    addChild(descriptionLabel);
+    
+    modeLabel->setPosition(descriptionLabel->getContentSize().width/2, -descriptionLabel->getContentSize().height);
+    descriptionLabel->addChild(modeLabel);
+    
+    auto modeChangeButton = Button::create("CloseNormal.png");
+    
+    modeChangeButton->setPosition(Vec2(modeChangeButton->getContentSize().width,modeChangeButton->getContentSize().height));
+    modeChangeButton->addClickEventListener([&](Ref* sender){
+        modeChange();
+    });
+    addChild(modeChangeButton);
     
     auto saveBtn = Button::create("CloseNormal.png");
     
@@ -108,6 +125,8 @@ bool HelloWorld::init()
     });
     addChild(saveBtn);
     
+    loadCatInfoCsv();
+    
     return true;
 }
 void HelloWorld::update(float dt)
@@ -117,7 +136,7 @@ void HelloWorld::update(float dt)
 
 void HelloWorld::saveCatInfoCsv()
 {
-    if(catInfos.empty())
+    if(catInfosForSaving.empty())
         return;
     
     std::string writablePath = FileUtils::getInstance()->getWritablePath();
@@ -129,16 +148,18 @@ void HelloWorld::saveCatInfoCsv()
     
     std::vector<CatInfo> newInfos;
     
-    for(const auto& info : catInfos)
+    for(const auto& info : catInfosForSaving)
         newInfos.push_back(info);
 
-    data.copy((unsigned char*) newInfos.data(), catInfos.size() * sizeof(CatInfo));
+    data.copy((unsigned char*) newInfos.data(), catInfosForSaving.size() * sizeof(CatInfo));
     
     FileUtils::getInstance()->writeDataToFile(data, fullPath);
+    
+    catInfosForSaving.clear();
 }
 void HelloWorld::loadCatInfoCsv()
 {
-    catInfos.clear();
+    catInfosForLoading.clear();
     std::string writablePath = FileUtils::getInstance()->getWritablePath();
     std::string fileName = "write_cat_info.csv";
     
@@ -157,57 +178,35 @@ void HelloWorld::loadCatInfoCsv()
         ci.type = buffer[i].type;
         ci.intervalTime = buffer[i].intervalTime;
         
-        catInfos.push_back(ci);
+        catInfosForLoading.push_back(ci);
     }
 }
 void HelloWorld::updateCat(float dt)
 {
-    if(catInfos.empty())
+    if(catInfosForLoading.empty())
     {
         unschedule(schedule_selector(HelloWorld::updateCat));
         return;
     }
     
-    CatInfo frontCatInfo = catInfos.front();
+    CatInfo frontCatInfo = catInfosForLoading.front();
     
-    
-    if( loadTimer + dt >= frontCatInfo.intervalTime )
+    if( timer + dt >= frontCatInfo.intervalTime )
     {
-        auto spr = Sprite::create("cat.png");
-        
-        if(frontCatInfo.type == eTouchType::BLUE)
-            spr->setColor(Color3B::BLUE);
-        else if(frontCatInfo.type == eTouchType::RED)
-            spr->setColor(Color3B::RED);
         auto visibleSize = Director::getInstance()->getVisibleSize();
         
-        auto sprSize = spr->getContentSize();
-        
-        spr->setPosition(visibleSize.width + sprSize.width*0.5,visibleSize.height*0.5);
-        auto movAction = MoveBy::create(2.0f, Vec2(-(visibleSize.width + sprSize.width),0));
-        
-        auto seq = Sequence::create(movAction,RemoveSelf::create(),NULL);
-        
-        spr->runAction(seq);
-
-        addChild(spr);
-        
-        catInfos.pop_front();
-        loadTimer = 0.0;
+        makeCatInRoad(visibleSize.height*0.5, (eTouchType)frontCatInfo.type);
+    
+        catInfosForLoading.pop_front();
+        timer = 0.0;
     }
     else
-        loadTimer += dt;
+        timer += dt;
     
     
 }
-void HelloWorld::touchScreen(eTouchType type)
+void HelloWorld::makeCatInRoad(float initPosY, eTouchType type)
 {
-    CatInfo newCatInfo;
-    newCatInfo.type = type;
-    newCatInfo.intervalTime = timer;
-    
-    catInfos.push_back(newCatInfo);
-    
     auto spr = Sprite::create("cat.png");
     
     if(type == eTouchType::RED)
@@ -219,7 +218,7 @@ void HelloWorld::touchScreen(eTouchType type)
     
     auto sprSize = spr->getContentSize();
     
-    spr->setPosition(visibleSize.width + sprSize.width*0.5,visibleSize.height*0.5);
+    spr->setPosition(visibleSize.width + sprSize.width*0.5,initPosY);
     
     auto movAction = MoveBy::create(2.0f, Vec2(-(visibleSize.width + sprSize.width),0));
     
@@ -228,23 +227,60 @@ void HelloWorld::touchScreen(eTouchType type)
     spr->runAction(seq);
     
     addChild(spr);
-
+}
+void HelloWorld::modeChange()
+{
+    if(modeLabel->getTag() == eModeType::PLAYING)
+    {
+        //SAVING 모드 일 때
+        scheduleUpdate();
+        
+        unschedule(schedule_selector(HelloWorld::updateCat));
+        
+        modeLabel->setTag(eModeType::SAVING);
+        modeLabel->setString("SAVING mode");
+    }
+    else if(modeLabel->getTag() == eModeType::SAVING)
+    {
+        //PLAYING 모드 일 때
+        unscheduleUpdate();
+        
+        saveCatInfoCsv();
+        loadCatInfoCsv();
+        
+        schedule(schedule_selector(HelloWorld::updateCat));
+        
+        modeLabel->setTag(eModeType::PLAYING);
+        modeLabel->setString("PLAYING mode");
+    }
+    
     timer = 0.0;
+}
+void HelloWorld::touchScreen(eTouchType type)
+{
+    if(modeLabel->getTag() == eModeType::SAVING)
+    {
+        CatInfo newCatInfo;
+        newCatInfo.type = type;
+        newCatInfo.intervalTime = timer;
+    
+        catInfosForSaving.push_back(newCatInfo);
+    
+        auto visibleSize = Director::getInstance()->getVisibleSize();
+    
+        makeCatInRoad(visibleSize.height*0.5, type);
+
+        timer = 0.0;
+    }
 }
 
 void HelloWorld::menuCloseCallback(Ref* pSender)
 {
-    saveCatInfoCsv();
-    loadCatInfoCsv();
-    
-    schedule(schedule_selector(HelloWorld::updateCat));
-    
-    
     //Close the cocos2d-x game scene and quit the application
-    //Director::getInstance()->end();
+    Director::getInstance()->end();
 
     #if (CC_TARGET_PLATFORM == CC_PLATFORM_IOS)
-    //exit(0);
+    exit(0);
 #endif
     
     /*To navigate back to native iOS screen(if present) without quitting the application  ,do not use Director::getInstance()->end() and exit(0) as given above,instead trigger a custom event created in RootViewController.mm as below*/
