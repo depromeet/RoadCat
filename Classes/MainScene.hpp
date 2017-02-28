@@ -25,4 +25,10 @@ public:
     CREATE_FUNC(MainScene);
 };
 
+//난이도 선택 레이어
+class DifficultyLayer
+{
+public:
+    
+};
 #endif /* MainScene_hpp */

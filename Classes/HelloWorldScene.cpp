@@ -115,6 +115,13 @@ bool HelloWorld::init()
     
     loadCatInfoCsv();
     
+    return true;
+}
+
+void HelloWorld::onEnterTransitionDidFinish()
+{
+    Layer::onEnterTransitionDidFinish();
+    
     schedule(schedule_selector(HelloWorld::updateCat));
     
     
@@ -126,29 +133,27 @@ bool HelloWorld::init()
                             vs.height*0.5 );
     
     countLabel->enableOutline(Color4B::ORANGE,1);
-
+    
     auto readyGoAction =
     Sequence::create(
                      MoveTo::create(0.6f, Vec2(vs.width*0.5,vs.height*0.5)),
                      DelayTime::create(0.45f),
                      CallFuncN::create([](Node* sender){
-                            auto lab = static_cast<Label*>(sender);
-                            lab->setString("GO!");
-                            }),
+        auto lab = static_cast<Label*>(sender);
+        lab->setString("GO!");
+    }),
                      DelayTime::create(0.5f),
                      MoveTo::create(0.6f,
-                     Vec2(-vs.width*0.5-countLabel->getContentSize().width*0.5,vs.height*0.5)),
+                                    Vec2(-vs.width*0.5-countLabel->getContentSize().width*0.5,vs.height*0.5)),
                      CallFuncN::create([](Node* sender){
-                            SimpleAudioEngine::getInstance()->playBackgroundMusic("background.mp3",true);
-                            sender->removeFromParentAndCleanup(true);
-                     }),
+        SimpleAudioEngine::getInstance()->playBackgroundMusic("background.mp3",true);
+        sender->removeFromParentAndCleanup(true);
+    }),
                      nullptr);
     
     countLabel->runAction(readyGoAction);
     
     addChild(countLabel);
-    
-    return true;
 }
 void HelloWorld::update(float dt)
 {
