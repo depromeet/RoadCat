@@ -39,16 +39,16 @@ bool MainScene::init()
     addChild(backSpr);
     
     auto descriptionItem = MenuItemImage::create("res/main/description_menu.png",
-                                                 "res/main/description_menu.png"
-                                                 );
-    
-    descriptionItem->setCallback(CC_CALLBACK_1(MainScene::descriptionCallback, this));
+                                                  "res/main/description_menu.png",
+                                                 [](Ref* sender){
+                                                     Director::getInstance()->replaceScene(TransitionSlideInR::create(1.0f, HelloWorld::createScene()));
+                                                 });
     
     auto startItem = MenuItemImage::create("res/main/start_menu.png",
-                                                 "res/main/start_menu.png"
-                                                 );
-    
-    startItem->setCallback(CC_CALLBACK_1(MainScene::startCallback, this));
+                                           "res/main/start_menu.png",
+                                           [](Ref* sender){
+                                               
+                                           });
     
     // create menu, it's an autorelease object
     auto menu = Menu::create(descriptionItem,startItem, NULL);
@@ -59,13 +59,4 @@ bool MainScene::init()
     this->addChild(menu, 1);
     
     return true;
-}
-
-void MainScene::startCallback(Ref* sender)
-{
-    Director::getInstance()->replaceScene(TransitionSlideInR::create(1.0f, HelloWorld::createScene()));
-}
-void MainScene::descriptionCallback(Ref* sender)
-{
-    
 }

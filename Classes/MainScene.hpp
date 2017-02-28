@@ -19,9 +19,6 @@ public:
     
     static cocos2d::Scene* createScene();
     
-    void startCallback(cocos2d::Ref* sender);
-    void descriptionCallback(cocos2d::Ref* sender);
-    
     CREATE_FUNC(MainScene);
 };
 
