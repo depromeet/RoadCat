@@ -26,7 +26,7 @@ public:
 };
 
 //난이도 선택 레이어
-class DifficultyLayer
+class DifficultyLayer : public cocos2d::Layer
 {
 public:
     

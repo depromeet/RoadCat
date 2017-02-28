@@ -188,14 +188,19 @@ void HelloWorld::saveCatInfoCsv()
 void HelloWorld::loadCatInfoCsv()
 {
     catInfosForLoading.clear();
+
+#ifdef __MAKING_MODE
     std::string writablePath = FileUtils::getInstance()->getWritablePath();
     std::string fileName = "write_cat_info.csv";
     
-    std::string fullPath = "res/stage_1.csv";
+    std::string fullPath = writablePath + fileName;
     
     std::string readDataStr = FileUtils::getInstance()->getStringFromFile(fullPath);
     
     Data datas = FileUtils::getInstance()->getDataFromFile(fullPath);
+#else
+    Data datas = FileUtils::getInstance()->getDataFromFile("res/stage/stage_1.csv");
+#endif
     
     CatInfo* buffer = (CatInfo*) datas.getBytes();
     ssize_t length = datas.getSize() / sizeof(CatInfo);
