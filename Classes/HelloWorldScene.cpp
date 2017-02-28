@@ -2,6 +2,8 @@
 #include "SimpleAudioEngine.h"
 #include "ui/CocosGUI.h"
 
+//#define __MAKING_MODE
+
 USING_NS_CC;
 using namespace ui;
 using namespace CocosDenshion;
@@ -31,7 +33,7 @@ bool HelloWorld::init()
         return false;
     }
     
-    auto visibleSize = Director::getInstance()->getVisibleSize();
+    vs = Director::getInstance()->getVisibleSize();
     Vec2 origin = Director::getInstance()->getVisibleOrigin();
 
     /////////////////////////////
@@ -44,7 +46,7 @@ bool HelloWorld::init()
                                            "CloseSelected.png",
                                            CC_CALLBACK_1(HelloWorld::menuCloseCallback, this));
     
-    closeItem->setPosition(Vec2(origin.x + visibleSize.width - closeItem->getContentSize().width/2 ,
+    closeItem->setPosition(Vec2(origin.x + vs.width - closeItem->getContentSize().width/2 ,
                                 origin.y + closeItem->getContentSize().height/2));
 
     // create menu, it's an autorelease object
@@ -61,17 +63,17 @@ bool HelloWorld::init()
     auto label = Label::createWithTTF("Hello World", "fonts/Marker Felt.ttf", 24);
     
     // position the label on the center of the screen
-    label->setPosition(Vec2(origin.x + visibleSize.width/2,
-                            origin.y + visibleSize.height - label->getContentSize().height));
+    label->setPosition(Vec2(origin.x + vs.width/2,
+                            origin.y + vs.height/2 - label->getContentSize().height));
 
     // add the label as a child to this layer
     this->addChild(label, 1);
 
     // add "HelloWorld" splash screen"
-    auto sprite = Sprite::create("HelloWorld.png");
+    auto sprite = Sprite::create("background.png");
 
     // position the sprite on the center of the screen
-    sprite->setPosition(Vec2(visibleSize.width/2 + origin.x, visibleSize.height/2 + origin.y));
+    sprite->setPosition(Vec2(vs.width/2 + origin.x, vs.height/2 + origin.y));
 
     // add the sprite as a child to this layer
     this->addChild(sprite, 0);
@@ -94,11 +96,13 @@ bool HelloWorld::init()
     
     _eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
     
+    startInitialTime = 3.0f;
     timer = 0.0;
 
-    panelCatSpr = Sprite::create("cat.png");
+    panelCatSpr = Sprite::create("res/feed.png");
     
-    panelCatSpr->setPosition(panelCatSpr->getContentSize().width*0.5,visibleSize.height*0.5);
+    panelCatSpr->setPosition(panelCatSpr->getContentSize().width*0.5+50.0f,
+                             vs.height*0.5-13);
     
     addChild(panelCatSpr);
     
@@ -107,24 +111,55 @@ bool HelloWorld::init()
     modeLabel = Label::createWithTTF("PLAY mode", "fonts/arial.ttf", 30.0f);
     modeLabel->setTag(eModeType::PLAYING);
     
-    descriptionLabel->setPosition(visibleSize.width*0.5, visibleSize.height*0.5+200);
+    descriptionLabel->setPosition(vs.width*0.5, vs.height*0.5+200);
     
     addChild(descriptionLabel);
     
     modeLabel->setPosition(descriptionLabel->getContentSize().width/2, -descriptionLabel->getContentSize().height);
     descriptionLabel->addChild(modeLabel);
     
+#ifdef __MAKING_MODE
     auto modeChangeButton = Button::create("CloseNormal.png");
-    
+
     modeChangeButton->setPosition(Vec2(modeChangeButton->getContentSize().width,modeChangeButton->getContentSize().height));
     modeChangeButton->addClickEventListener([&](Ref* sender){
         modeChange();
     });
     addChild(modeChangeButton);
+#endif
     
     loadCatInfoCsv();
     
-    SimpleAudioEngine::getInstance()->playBackgroundMusic("background.mp3",true);
+    schedule(schedule_selector(HelloWorld::updateCat));
+    
+    
+    SimpleAudioEngine::getInstance()->playEffect("ready_go.mp3");
+    
+    auto countLabel = Label::createWithTTF("READY", "fonts/arial.ttf", 50.0f);
+    
+    countLabel->setPosition(vs.width+countLabel->getContentSize().width*0.5,
+                            vs.height*0.5 );
+    
+    auto readyGoAction =
+    Sequence::create(
+                     MoveTo::create(0.6f, Vec2(vs.width*0.5,vs.height*0.5)),
+                     DelayTime::create(0.45f),
+                     CallFuncN::create([](Node* sender){
+                            auto lab = static_cast<Label*>(sender);
+                            lab->setString("GO!");
+                            }),
+                     DelayTime::create(0.5f),
+                     MoveTo::create(0.6f,
+                     Vec2(-vs.width*0.5-countLabel->getContentSize().width*0.5,vs.height*0.5)),
+                     CallFuncN::create([](Node* sender){
+                            SimpleAudioEngine::getInstance()->playBackgroundMusic("background.mp3",true);
+                            sender->removeFromParentAndCleanup(true);
+                     }),
+                     nullptr);
+    
+    countLabel->runAction(readyGoAction);
+    
+    addChild(countLabel);
     
     return true;
 }
@@ -142,6 +177,8 @@ void HelloWorld::saveCatInfoCsv()
     std::string fileName = "write_cat_info.csv";
     
     std::string fullPath = writablePath + fileName;
+    
+    log("fullPath : %s", fullPath.c_str());
     // writeTest
     Data data;
     
@@ -162,7 +199,7 @@ void HelloWorld::loadCatInfoCsv()
     std::string writablePath = FileUtils::getInstance()->getWritablePath();
     std::string fileName = "write_cat_info.csv";
     
-    std::string fullPath = writablePath + fileName;
+    std::string fullPath = "res/stage_1.csv";
     
     std::string readDataStr = FileUtils::getInstance()->getStringFromFile(fullPath);
     
@@ -192,9 +229,7 @@ void HelloWorld::updateCat(float dt)
     
     if( timer + dt >= frontCatInfo.intervalTime )
     {
-        auto visibleSize = Director::getInstance()->getVisibleSize();
-        
-        makeCatInRoad(visibleSize.height*0.5, (eTouchType)frontCatInfo.type);
+        makeCatInRoad(vs.height*0.5, (eTouchType)frontCatInfo.type);
     
         catInfosForLoading.pop_front();
         timer = 0.0;
@@ -206,29 +241,46 @@ void HelloWorld::updateCat(float dt)
 }
 void HelloWorld::makeCatInRoad(float initPosY, eTouchType type)
 {
-    auto spr = Sprite::create("cat.png");
+    auto animation = Animation::create();
+    for( int i=1;i<=2;i++)
+    {
+        char szName[100] = {0};
+        std::string format;
+        
+        if(type == eTouchType::RED)
+            format = "res/cat%02d.png";
+        else
+            format = "res/white_cat%02d.png";
+        
+        sprintf(szName, format.c_str(), i);
+        animation->addSpriteFrameWithFile(szName);
+    }
+    // should last 2.8 seconds. And there are 14 frames.
     
-    if(type == eTouchType::RED)
-        spr->setColor(Color3B::RED);
-    else if(type == eTouchType::BLUE)
-        spr->setColor(Color3B::BLUE);
+    animation->setDelayPerUnit(0.1 / 2.0f);
+    animation->setLoops(-1);
     
-    spr->setName("gen_cat");
+    auto spr = Sprite::createWithSpriteFrame(animation->getFrames().front()->getSpriteFrame());
+    
     spr->setTag(type);
-    
-    auto visibleSize = Director::getInstance()->getVisibleSize();
     
     auto sprSize = spr->getContentSize();
     
-    spr->setPosition(visibleSize.width + sprSize.width*0.5,initPosY);
+    spr->setPosition(vs.width + sprSize.width*0.5,initPosY);
     
-    auto movAction = MoveBy::create(2.0f, Vec2(-(visibleSize.width + sprSize.width),0));
+    auto movAction = MoveBy::create(2.0f, Vec2(-(vs.width + sprSize.width),0));
     
-    auto seq = Sequence::create(movAction,RemoveSelf::create(),NULL);
+    spr->runAction(RepeatForever::create(Animate::create(animation)));
+    
+    auto seq = Sequence::create(movAction,CallFunc::create([this](){
+        this->removeChild(catSprList.front());
+        this->catSprList.pop_front();
+    }),nullptr);
     
     spr->runAction(seq);
     
     addChild(spr);
+    catSprList.push_back(spr);
 }
 void HelloWorld::modeChange()
 {
@@ -258,6 +310,41 @@ void HelloWorld::modeChange()
     
     timer = 0.0;
 }
+void HelloWorld::playCorrectEffect(eComboType type)
+{
+    Sprite* spr = nullptr;
+    
+    switch (type) {
+        case eComboType::PERFECT:
+            spr = Sprite::create("res/perfect.png");
+            break;
+            
+        case eComboType::GOOD:
+            spr = Sprite::create("res/good.png");
+            break;
+            
+        case eComboType::EXCELLENT:
+            spr = Sprite::create("res/excellent.png");
+            break;
+            
+        case eComboType::NONE:
+            spr = Sprite::create("res/miss.png");
+            break;
+    }
+    if(spr != nullptr)
+    {
+        spr->setPosition(panelCatSpr->getPosition());
+        
+        auto spwn = Spawn::create(MoveBy::create(1.0f, Vec2(0,100.0f)),FadeOut::create(1.0f),NULL );
+        
+        auto effectAction = Sequence::create(spwn,RemoveSelf::create(), NULL);
+        
+        spr->runAction(effectAction);
+        spr->setScale(0.5f);
+        
+        addChild(spr);
+    }
+}
 void HelloWorld::touchScreen(eTouchType type)
 {
     if(modeLabel->getTag() == eModeType::SAVING)
@@ -276,41 +363,53 @@ void HelloWorld::touchScreen(eTouchType type)
     }
     else if(modeLabel->getTag() == eModeType::PLAYING)
     {
-        for(auto &child : this->getChildren())
+        if(catSprList.empty())
+            return;
+        
+        
+        eComboType comboType = checkComboInPanel(catSprList.front()->getPosition());
+        
+        switch(comboType)
         {
-            if(child->getName() == "gen_cat" && child->getTag() == type) //생성된 cat이고, 터치한 색깔이 일치했을 경우
+            case eComboType::GOOD:
+                if(catSprList.front()->getTag() == type)
+                {
+                    SimpleAudioEngine::getInstance()->playEffect("good.mp3");
+                }
+                break;
+            case eComboType::EXCELLENT:
+                if(catSprList.front()->getTag() == type)
+                {
+                    SimpleAudioEngine::getInstance()->playEffect("excellent.mp3");
+                    log("excellent!!");
+                }
+                break;
+            case eComboType::PERFECT:
+                if(catSprList.front()->getTag() == type)
+                {
+                    SimpleAudioEngine::getInstance()->playEffect("perfect.mp3");
+                    log("perfect!!!");
+                }
+                break;
+        }
+        
+        if(comboType != eComboType::NONE) //맞췄으면
+        {
+            if(catSprList.front()->getTag() != type)
             {
-                bool isItCombo = true;
+                SimpleAudioEngine::getInstance()->playEffect("miss.mp3");
                 
-                switch(checkComboInPanel(child->getPosition()))
-                {
-                    case eComboType::GOOD:
-                        log("good!!!");
-                        break;
-                    case eComboType::EXCELLENT:
-                        log("excellent!!!");
-                        break;
-                    case eComboType::PERFECT:
-                        log("perfect!!!");
-                        break;
-                    default:
-                        isItCombo = false;
-                }
-                
-                if(isItCombo)
-                {
-                    child->setVisible(false);
-                    log("color : %d",child->getTag());
-                    break; //한 번에 두개 없애기 방지
-                }
+                playCorrectEffect(eComboType::NONE);
             }
-        }
-        if(type == eTouchType::RED)
-        {
-            
-        }
-        else
-        {
+            else
+            {
+                auto seq = Sequence::create(Blink::create(0.5f, 5), Show::create(), NULL);
+                panelCatSpr->runAction(seq);
+                
+                playCorrectEffect((eComboType)comboType);
+            }
+            removeChild(catSprList.front());
+            catSprList.pop_front();
             
         }
     }
@@ -319,13 +418,14 @@ void HelloWorld::touchScreen(eTouchType type)
 HelloWorld::eComboType HelloWorld::checkComboInPanel(Vec2 catPos)
 {
     float dist = fabs(panelCatSpr->getPositionX() - catPos.x);
-    float panelWidth = panelCatSpr->getContentSize().width;
+    float panelWidth = panelCatSpr->getContentSize().width*0.5 + 50;
     
+    log("dist id %.2f",dist);
     if(dist > panelWidth)
         return NONE;
     else if(dist > panelWidth*0.5)
         return GOOD;
-    else if(dist > panelWidth*0.3)
+    else if(dist > panelWidth*0.2)
         return EXCELLENT;
     else
         return PERFECT;
