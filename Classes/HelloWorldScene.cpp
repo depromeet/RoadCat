@@ -54,21 +54,6 @@ bool HelloWorld::init()
     menu->setPosition(Vec2::ZERO);
     this->addChild(menu, 1);
 
-    /////////////////////////////
-    // 3. add your codes below...
-
-    // add a label shows "Hello World"
-    // create and initialize a label
-    
-    auto label = Label::createWithTTF("Hello World", "fonts/Marker Felt.ttf", 24);
-    
-    // position the label on the center of the screen
-    label->setPosition(Vec2(origin.x + vs.width/2,
-                            origin.y + vs.height/2 - label->getContentSize().height));
-
-    // add the label as a child to this layer
-    this->addChild(label, 1);
-
     // add "HelloWorld" splash screen"
     auto sprite = Sprite::create("background.png");
 
@@ -273,6 +258,7 @@ void HelloWorld::makeCatInRoad(float initPosY, eTouchType type)
     spr->runAction(RepeatForever::create(Animate::create(animation)));
     
     auto seq = Sequence::create(movAction,CallFunc::create([this](){
+        this->playCorrectEffect(eComboType::NONE);
         this->removeChild(catSprList.front());
         this->catSprList.pop_front();
     }),nullptr);
@@ -317,18 +303,22 @@ void HelloWorld::playCorrectEffect(eComboType type)
     switch (type) {
         case eComboType::PERFECT:
             spr = Sprite::create("res/perfect.png");
+            SimpleAudioEngine::getInstance()->playEffect("perfect.mp3");
             break;
             
         case eComboType::GOOD:
             spr = Sprite::create("res/good.png");
+            SimpleAudioEngine::getInstance()->playEffect("good.mp3");
             break;
             
         case eComboType::EXCELLENT:
             spr = Sprite::create("res/excellent.png");
+            SimpleAudioEngine::getInstance()->playEffect("excellent.mp3");
             break;
             
         case eComboType::NONE:
             spr = Sprite::create("res/miss.png");
+            SimpleAudioEngine::getInstance()->playEffect("miss.mp3");
             break;
     }
     if(spr != nullptr)
@@ -369,36 +359,10 @@ void HelloWorld::touchScreen(eTouchType type)
         
         eComboType comboType = checkComboInPanel(catSprList.front()->getPosition());
         
-        switch(comboType)
-        {
-            case eComboType::GOOD:
-                if(catSprList.front()->getTag() == type)
-                {
-                    SimpleAudioEngine::getInstance()->playEffect("good.mp3");
-                }
-                break;
-            case eComboType::EXCELLENT:
-                if(catSprList.front()->getTag() == type)
-                {
-                    SimpleAudioEngine::getInstance()->playEffect("excellent.mp3");
-                    log("excellent!!");
-                }
-                break;
-            case eComboType::PERFECT:
-                if(catSprList.front()->getTag() == type)
-                {
-                    SimpleAudioEngine::getInstance()->playEffect("perfect.mp3");
-                    log("perfect!!!");
-                }
-                break;
-        }
-        
         if(comboType != eComboType::NONE) //맞췄으면
         {
             if(catSprList.front()->getTag() != type)
             {
-                SimpleAudioEngine::getInstance()->playEffect("miss.mp3");
-                
                 playCorrectEffect(eComboType::NONE);
             }
             else
@@ -420,7 +384,6 @@ HelloWorld::eComboType HelloWorld::checkComboInPanel(Vec2 catPos)
     float dist = fabs(panelCatSpr->getPositionX() - catPos.x);
     float panelWidth = panelCatSpr->getContentSize().width*0.5 + 50;
     
-    log("dist id %.2f",dist);
     if(dist > panelWidth)
         return NONE;
     else if(dist > panelWidth*0.5)
