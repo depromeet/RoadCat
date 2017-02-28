@@ -91,19 +91,19 @@ bool HelloWorld::init()
     
     addChild(panelCatSpr);
     
-    auto descriptionLabel = Label::createWithTTF("PLAY mode가 되면 자동으로 edit 된 내용이 저장됩니다!", "fonts/arial.ttf", 30.0f);
+#ifdef __MAKING_MODE
+    auto descriptionLabel = Label::createWithTTF("PLAY mode가 되면 자동으로 edit 된 내용이 저장됩니다!", "fonts/main_font.ttf", 30.0f);
     
     modeLabel = Label::createWithTTF("PLAY mode", "fonts/arial.ttf", 30.0f);
     modeLabel->setTag(eModeType::PLAYING);
     
-    descriptionLabel->setPosition(vs.width*0.5, vs.height*0.5+200);
+    descriptionLabel->setPosition(vs.width*0.5, vs.height*0.5);
     
     addChild(descriptionLabel);
     
     modeLabel->setPosition(descriptionLabel->getContentSize().width/2, -descriptionLabel->getContentSize().height);
     descriptionLabel->addChild(modeLabel);
     
-#ifdef __MAKING_MODE
     auto modeChangeButton = Button::create("CloseNormal.png");
 
     modeChangeButton->setPosition(Vec2(modeChangeButton->getContentSize().width,modeChangeButton->getContentSize().height));
@@ -120,11 +120,13 @@ bool HelloWorld::init()
     
     SimpleAudioEngine::getInstance()->playEffect("ready_go.mp3");
     
-    auto countLabel = Label::createWithTTF("READY", "fonts/arial.ttf", 50.0f);
+    auto countLabel = Label::createWithTTF("READY", "fonts/main_font.ttf", 50.0f);
     
     countLabel->setPosition(vs.width+countLabel->getContentSize().width*0.5,
                             vs.height*0.5 );
     
+    countLabel->enableOutline(Color4B::ORANGE,1);
+
     auto readyGoAction =
     Sequence::create(
                      MoveTo::create(0.6f, Vec2(vs.width*0.5,vs.height*0.5)),
@@ -337,6 +339,7 @@ void HelloWorld::playCorrectEffect(eComboType type)
 }
 void HelloWorld::touchScreen(eTouchType type)
 {
+#ifdef __MAKING_MODE
     if(modeLabel->getTag() == eModeType::SAVING)
     {
         CatInfo newCatInfo;
@@ -353,6 +356,7 @@ void HelloWorld::touchScreen(eTouchType type)
     }
     else if(modeLabel->getTag() == eModeType::PLAYING)
     {
+#endif
         if(catSprList.empty())
             return;
         
@@ -376,7 +380,9 @@ void HelloWorld::touchScreen(eTouchType type)
             catSprList.pop_front();
             
         }
+#ifdef __MAKING_MODE
     }
+#endif
 }
 
 HelloWorld::eComboType HelloWorld::checkComboInPanel(Vec2 catPos)

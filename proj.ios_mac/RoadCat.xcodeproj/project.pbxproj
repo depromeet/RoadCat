@@ -20,6 +20,7 @@
 		3E4D19611E612E2F00E06D2D /* perfect.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 3E4D195D1E612E2F00E06D2D /* perfect.mp3 */; };
 		3E4D19631E61622900E06D2D /* background.png in Resources */ = {isa = PBXBuildFile; fileRef = 3E4D19621E61622900E06D2D /* background.png */; };
 		3E951B511E3353B7009377F3 /* can.png in Resources */ = {isa = PBXBuildFile; fileRef = 3E951B501E3353B7009377F3 /* can.png */; };
+		3E9986C41E654BB900861AB7 /* MainScene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3E9986C21E654BB900861AB7 /* MainScene.cpp */; };
 		3EACC98F19EE6D4300EB3C5E /* res in Resources */ = {isa = PBXBuildFile; fileRef = 3EACC98E19EE6D4300EB3C5E /* res */; };
 		3EACC99019EE6D4300EB3C5E /* res in Resources */ = {isa = PBXBuildFile; fileRef = 3EACC98E19EE6D4300EB3C5E /* res */; };
 		3EE3A4A01E4EFCEB009D0A69 /* background.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 3EE3A49F1E4EFCEB009D0A69 /* background.mp3 */; };
@@ -133,6 +134,8 @@
 		3E4D195D1E612E2F00E06D2D /* perfect.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = perfect.mp3; sourceTree = "<group>"; };
 		3E4D19621E61622900E06D2D /* background.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = background.png; sourceTree = "<group>"; };
 		3E951B501E3353B7009377F3 /* can.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = can.png; path = res/can.png; sourceTree = "<group>"; };
+		3E9986C21E654BB900861AB7 /* MainScene.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MainScene.cpp; sourceTree = "<group>"; };
+		3E9986C31E654BB900861AB7 /* MainScene.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MainScene.hpp; sourceTree = "<group>"; };
 		3EACC98E19EE6D4300EB3C5E /* res */ = {isa = PBXFileReference; lastKnownFileType = folder; path = res; sourceTree = "<group>"; };
 		3EE3A49F1E4EFCEB009D0A69 /* background.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = background.mp3; sourceTree = "<group>"; };
 		46880B7619C43A67006E1F66 /* CloseNormal.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = CloseNormal.png; sourceTree = "<group>"; };
@@ -345,6 +348,8 @@
 				46880B8519C43A87006E1F66 /* AppDelegate.h */,
 				46880B8619C43A87006E1F66 /* HelloWorldScene.cpp */,
 				46880B8719C43A87006E1F66 /* HelloWorldScene.h */,
+				3E9986C21E654BB900861AB7 /* MainScene.cpp */,
+				3E9986C31E654BB900861AB7 /* MainScene.hpp */,
 			);
 			name = Classes;
 			path = ../Classes;
@@ -558,6 +563,7 @@
 				503AE10017EB989F00D1A890 /* AppController.mm in Sources */,
 				503AE10217EB989F00D1A890 /* RootViewController.mm in Sources */,
 				503AE10117EB989F00D1A890 /* main.m in Sources */,
+				3E9986C41E654BB900861AB7 /* MainScene.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
