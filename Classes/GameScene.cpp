@@ -1,4 +1,5 @@
-#include "HelloWorldScene.h"
+#include "GameScene.h"
+#include "MainScene.hpp"
 #include "SimpleAudioEngine.h"
 #include "ui/CocosGUI.h"
 
@@ -8,23 +9,69 @@ USING_NS_CC;
 using namespace ui;
 using namespace CocosDenshion;
 
-Scene* HelloWorld::createScene()
+bool GameOver::init()
 {
-    // 'scene' is an autorelease object
-    auto scene = Scene::create();
+    if(!Layer::init())
+        return false;
     
-    // 'layer' is an autorelease object
-    auto layer = HelloWorld::create();
+    auto vs = Director::getInstance()->getVisibleSize();
+    
+    auto background = Sprite::create("res/main/background.png");
+    
+    background->setPosition(vs.width*0.5f,vs.height*0.5f);
+    addChild(background);
+    
+    auto nextBtn = Button::create("res/over/next_button.png");
+    auto nextCS = nextBtn->getContentSize();
+    
+    nextBtn->setPosition(Vec2(vs.width-30.0f-nextCS.width*0.5, 30.0f + nextCS.height*0.5f));
+    
+    nextBtn->addClickEventListener([](Ref*){
+        Director::getInstance()->replaceScene(MainScene::createScene());
+    });
+    addChild(nextBtn);
+    
+    auto scoreSpr = Sprite::create("res/over/score_button.png");
+    auto scoreCS = scoreSpr->getContentSize();
+    
+    scoreSpr->setPosition(90.0f + scoreCS.width*0.5f, vs.height - 40.0f - scoreCS.height*0.5f);
+    
+    addChild(scoreSpr);
+    
+    auto scoreCatSpr = Sprite::create("res/over/score_cat.png");
+    auto scoreCatCS = scoreCatSpr->getContentSize();
+    
+    scoreCatSpr->setPosition(307.0f + scoreCatCS.width*0.5f, vs.height-56.0f-scoreCatCS.height*0.5f);
+    
+    addChild(scoreCatSpr);
+    
+    auto totalBack = Sprite::create("res/over/total_background.png");
+    auto totalBackCS = totalBack->getContentSize();
+    
+    totalBack->setPosition(150.0f,vs.height - 107.0f - totalBackCS.height*0.5f);
+    
+    addChild(totalBack);
+    
+    successScore = Label::createWithTTF("0", "fonts/main_font.ttf", 25.0f);
+    
+    successScore->setPosition(110.0f,100.0f);
+    successScore->setAlignment(TextHAlignment::RIGHT);
+    successScore->setColor(Color3B::BLACK);
+    
+    totalBack->addChild(successScore);
+    
+    scheduleUpdate();
+    
+    return true;
+}
 
-    // add layer as a child to scene
-    scene->addChild(layer);
-
-    // return the scene
-    return scene;
+void GameOver::update(float dt)
+{
+    successScore->setString(StringUtils::format("%.6f",dt));
 }
 
 // on "init" you need to initialize your instance
-bool HelloWorld::init()
+bool GameScene::init()
 {
     //////////////////////////////
     // 1. super init first
@@ -44,7 +91,7 @@ bool HelloWorld::init()
     auto closeItem = MenuItemImage::create(
                                            "CloseNormal.png",
                                            "CloseSelected.png",
-                                           CC_CALLBACK_1(HelloWorld::menuCloseCallback, this));
+                                           CC_CALLBACK_1(GameScene::menuCloseCallback, this));
     
     closeItem->setPosition(Vec2(origin.x + vs.width - closeItem->getContentSize().width/2 ,
                                 origin.y + closeItem->getContentSize().height/2));
@@ -54,7 +101,7 @@ bool HelloWorld::init()
     menu->setPosition(Vec2::ZERO);
     this->addChild(menu, 1);
 
-    // add "HelloWorld" splash screen"
+    // add "GameScene" splash screen"
     auto sprite = Sprite::create("background.png");
 
     // position the sprite on the center of the screen
@@ -91,6 +138,8 @@ bool HelloWorld::init()
     
     addChild(panelCatSpr);
     
+    loadCatInfoCsv();
+    
 #ifdef __MAKING_MODE
     auto descriptionLabel = Label::createWithTTF("PLAY mode가 되면 자동으로 edit 된 내용이 저장됩니다!", "fonts/main_font.ttf", 30.0f);
     
@@ -113,16 +162,14 @@ bool HelloWorld::init()
     addChild(modeChangeButton);
 #endif
     
-    loadCatInfoCsv();
-    
     return true;
 }
 
-void HelloWorld::onEnterTransitionDidFinish()
+void GameScene::onEnterTransitionDidFinish()
 {
     Layer::onEnterTransitionDidFinish();
     
-    schedule(schedule_selector(HelloWorld::updateCat));
+    schedule(schedule_selector(GameScene::updateCat));
     
     
     SimpleAudioEngine::getInstance()->playEffect("ready_go.mp3");
@@ -155,12 +202,12 @@ void HelloWorld::onEnterTransitionDidFinish()
     
     addChild(countLabel);
 }
-void HelloWorld::update(float dt)
+void GameScene::update(float dt)
 {
     timer += dt;
 }
 
-void HelloWorld::saveCatInfoCsv()
+void GameScene::saveCatInfoCsv()
 {
     if(catInfosForSaving.empty())
         return;
@@ -185,7 +232,7 @@ void HelloWorld::saveCatInfoCsv()
     
     catInfosForSaving.clear();
 }
-void HelloWorld::loadCatInfoCsv()
+void GameScene::loadCatInfoCsv()
 {
     catInfosForLoading.clear();
 
@@ -214,11 +261,12 @@ void HelloWorld::loadCatInfoCsv()
         catInfosForLoading.push_back(ci);
     }
 }
-void HelloWorld::updateCat(float dt)
+void GameScene::updateCat(float dt)
 {
     if(catInfosForLoading.empty())
     {
-        unschedule(schedule_selector(HelloWorld::updateCat));
+        unschedule(schedule_selector(GameScene::updateCat));
+        
         return;
     }
     
@@ -236,7 +284,7 @@ void HelloWorld::updateCat(float dt)
     
     
 }
-void HelloWorld::makeCatInRoad(float initPosY, eTouchType type)
+void GameScene::makeCatInRoad(float initPosY, eTouchType type)
 {
     auto animation = Animation::create();
     for( int i=1;i<=2;i++)
@@ -271,8 +319,7 @@ void HelloWorld::makeCatInRoad(float initPosY, eTouchType type)
     
     auto seq = Sequence::create(movAction,CallFunc::create([this](){
         this->playCorrectEffect(eComboType::NONE);
-        this->removeChild(catSprList.front());
-        this->catSprList.pop_front();
+        this->removeFrontCat();
     }),nullptr);
     
     spr->runAction(seq);
@@ -280,14 +327,25 @@ void HelloWorld::makeCatInRoad(float initPosY, eTouchType type)
     addChild(spr);
     catSprList.push_back(spr);
 }
-void HelloWorld::modeChange()
+void GameScene::removeFrontCat()
+{
+    this->removeChild(catSprList.front());
+    this->catSprList.pop_front();
+    
+    //게임 오버.
+#ifndef __MAKING_MODE
+    if(catSprList.empty())
+        this->addChild(GameOver::create());
+#endif
+}
+void GameScene::modeChange()
 {
     if(modeLabel->getTag() == eModeType::PLAYING)
     {
         //SAVING 모드 일 때
         scheduleUpdate();
         
-        unschedule(schedule_selector(HelloWorld::updateCat));
+        unschedule(schedule_selector(GameScene::updateCat));
         
         modeLabel->setTag(eModeType::SAVING);
         modeLabel->setString("SAVING mode");
@@ -300,7 +358,7 @@ void HelloWorld::modeChange()
         saveCatInfoCsv();
         loadCatInfoCsv();
         
-        schedule(schedule_selector(HelloWorld::updateCat));
+        schedule(schedule_selector(GameScene::updateCat));
         
         modeLabel->setTag(eModeType::PLAYING);
         modeLabel->setString("PLAYING mode");
@@ -308,7 +366,7 @@ void HelloWorld::modeChange()
     
     timer = 0.0;
 }
-void HelloWorld::playCorrectEffect(eComboType type)
+void GameScene::playCorrectEffect(eComboType type)
 {
     Sprite* spr = nullptr;
     
@@ -347,7 +405,7 @@ void HelloWorld::playCorrectEffect(eComboType type)
         addChild(spr);
     }
 }
-void HelloWorld::touchScreen(eTouchType type)
+void GameScene::touchScreen(eTouchType type)
 {
 #ifdef __MAKING_MODE
     if(modeLabel->getTag() == eModeType::SAVING)
@@ -386,16 +444,14 @@ void HelloWorld::touchScreen(eTouchType type)
                 
                 playCorrectEffect((eComboType)comboType);
             }
-            removeChild(catSprList.front());
-            catSprList.pop_front();
-            
+            removeFrontCat();
         }
 #ifdef __MAKING_MODE
     }
 #endif
 }
 
-HelloWorld::eComboType HelloWorld::checkComboInPanel(Vec2 catPos)
+GameScene::eComboType GameScene::checkComboInPanel(Vec2 catPos)
 {
     float dist = fabs(panelCatSpr->getPositionX() - catPos.x);
     float panelWidth = panelCatSpr->getContentSize().width*0.5 + 50;
@@ -410,7 +466,7 @@ HelloWorld::eComboType HelloWorld::checkComboInPanel(Vec2 catPos)
         return PERFECT;
 }
 
-void HelloWorld::menuCloseCallback(Ref* pSender)
+void GameScene::menuCloseCallback(Ref* pSender)
 {
     //Close the cocos2d-x game scene and quit the application
     Director::getInstance()->end();
@@ -425,4 +481,27 @@ void HelloWorld::menuCloseCallback(Ref* pSender)
     //_eventDispatcher->dispatchEvent(&customEndEvent);
     
     
+}
+
+Scene* EasyScene::createScene()
+{
+    // 'scene' is an autorelease object
+    auto scene = Scene::create();
+    
+    // 'layer' is an autorelease object
+    auto layer = EasyScene::create();
+    
+    // add layer as a child to scene
+    scene->addChild(layer);
+    
+    // return the scene
+    return scene;
+}
+
+bool EasyScene::init()
+{
+    if(!GameScene::init())
+        return false;
+    
+    return true;
 }

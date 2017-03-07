@@ -1,15 +1,26 @@
-#ifndef __HELLOWORLD_SCENE_H__
-#define __HELLOWORLD_SCENE_H__
+#ifndef __GameScene_SCENE_H__
+#define __GameScene_SCENE_H__
 
 #include "cocos2d.h"
 
+class GameOver : public cocos2d::Layer
+{
+    cocos2d::Label* successScore;
+    
+public:
+    bool init();
+    
+    void update(float dt);
+
+    CREATE_FUNC(GameOver);
+};
 struct CatInfo
 {
     int type;
     float intervalTime;
 };
 
-class HelloWorld : public cocos2d::Layer
+class GameScene : public cocos2d::Layer
 {
     double timer;
     double startInitialTime;
@@ -27,8 +38,6 @@ public:
     enum eModeType{ PLAYING, SAVING };
     enum eTouchType{ RED, BLUE };
     enum eComboType{ NONE, GOOD, EXCELLENT, PERFECT };
-    
-    static cocos2d::Scene* createScene();
 
     virtual bool init();
     
@@ -50,8 +59,17 @@ public:
     void updateCat(float dt);
     void playCorrectEffect(eComboType type);
     
-    // implement the "static create()" method manually
-    CREATE_FUNC(HelloWorld);
+    void removeFrontCat();
 };
 
-#endif // __HELLOWORLD_SCENE_H__
+class EasyScene : public GameScene
+{
+public:
+    bool init() override;
+
+    static cocos2d::Scene* createScene();
+    
+    CREATE_FUNC(EasyScene);
+};
+
+#endif // __GameScene_SCENE_H__

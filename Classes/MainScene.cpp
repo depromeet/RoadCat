@@ -7,9 +7,13 @@
 //
 
 #include "MainScene.hpp"
-#include "HelloWorldScene.h"
+#include "GameScene.h"
+#include "SimpleAudioEngine.h"
+
 
 USING_NS_CC;
+using namespace CocosDenshion;
+
 
 bool DifficultyLayer::init()
 {
@@ -27,7 +31,8 @@ bool DifficultyLayer::init()
     auto easyItem = MenuItemImage::create("res/main/easy_button.png",
                                                  "res/main/easy_button.png",
                                                  [](Ref* sender){
-                                                     Director::getInstance()->replaceScene(TransitionSlideInR::create(1.0f, HelloWorld::createScene()));
+                                                     SimpleAudioEngine::getInstance()->stopBackgroundMusic();
+                                                     Director::getInstance()->replaceScene(TransitionSlideInR::create(1.0f, EasyScene::createScene()));
                                                  });
     
     auto mediumItem = MenuItemImage::create("res/main/medium_button.png",
@@ -46,7 +51,21 @@ bool DifficultyLayer::init()
     menu->alignItemsVerticallyWithPadding(26.0f);
     
     this->addChild(menu);
+    
+    auto backItem = MenuItemImage::create("res/main/back_button.png",
+                                      "res/main/back_button.png",
+                                      [this](Ref* sender){
+                                          this->removeFromParentAndCleanup(true);
+                                      });
+    
+    auto contentSize = backItem->getContentSize();
+    
+    auto backMenu = Menu::create(backItem, NULL);
+    
+    backMenu->setPosition(25+contentSize.width*0.5f,vs.height-25.0f-contentSize.height*0.5f);
 
+    addChild(backMenu);
+    
     return true;
 }
 Scene* MainScene::createScene()
@@ -112,6 +131,8 @@ bool MainScene::init()
     
     menu->runAction(upAndDown);
     this->addChild(menu, 1);
+    
+    SimpleAudioEngine::getInstance()->playBackgroundMusic("main_background.mp3");
     
     return true;
 }
