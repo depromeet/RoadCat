@@ -11,21 +11,22 @@
 
 #include "cocos2d.h"
 
+class DifficultyLayer : public cocos2d::Layer
+{
+public:
+    bool init() override;
+    
+    CREATE_FUNC(DifficultyLayer);
+};
+
 class MainScene : public cocos2d::Layer
 {
     cocos2d::Size vs;
 public:
-    virtual bool init();
+    bool init() override;
     
     static cocos2d::Scene* createScene();
     
     CREATE_FUNC(MainScene);
-};
-
-//난이도 선택 레이어
-class DifficultyLayer : public cocos2d::Layer
-{
-public:
-    
 };
 #endif /* MainScene_hpp */

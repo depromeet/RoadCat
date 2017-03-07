@@ -342,7 +342,7 @@ void HelloWorld::playCorrectEffect(eComboType type)
         auto effectAction = Sequence::create(spwn,RemoveSelf::create(), NULL);
         
         spr->runAction(effectAction);
-        spr->setScale(0.5f);
+        spr->setScale(0.2f);
         
         addChild(spr);
     }
