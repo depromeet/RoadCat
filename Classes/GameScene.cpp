@@ -67,7 +67,8 @@ bool GameOver::init()
 
 void GameOver::update(float dt)
 {
-    successScore->setString(StringUtils::format("%.6f",dt));
+    dtSum += dt;
+    successScore->setString(StringUtils::format("%.1f",dtSum));
 }
 
 // on "init" you need to initialize your instance
@@ -108,7 +109,7 @@ bool GameScene::init()
     sprite->setPosition(Vec2(vs.width/2 + origin.x, vs.height/2 + origin.y));
 
     // add the sprite as a child to this layer
-    this->addChild(sprite, 0);
+    this->addChild(sprite, -10);
     
     auto listener = EventListenerTouchOneByOne::create();
     
@@ -124,8 +125,6 @@ bool GameScene::init()
         return true;
     };
     
-    //std::string readDataStr = FileUtils::getInstance()->getStringFromFile("cat_pattern.csv");
-    
     _eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
     
     startInitialTime = 3.0f;
@@ -138,10 +137,8 @@ bool GameScene::init()
     
     addChild(panelCatSpr);
     
-    loadCatInfoCsv();
-    
 #ifdef __MAKING_MODE
-    auto descriptionLabel = Label::createWithTTF("PLAY mode가 되면 자동으로 edit 된 내용이 저장됩니다!", "fonts/main_font.ttf", 30.0f);
+    auto descriptionLabel = Label::createWithTTF("PLAY mode가 되면 자동으로 edit 된 내용이 저장됩니다!", "fonts/kr_font.ttf", 30.0f);
     
     modeLabel = Label::createWithTTF("PLAY mode", "fonts/arial.ttf", 30.0f);
     modeLabel->setTag(eModeType::PLAYING);
@@ -170,7 +167,6 @@ void GameScene::onEnterTransitionDidFinish()
     Layer::onEnterTransitionDidFinish();
     
     schedule(schedule_selector(GameScene::updateCat));
-    
     
     SimpleAudioEngine::getInstance()->playEffect("ready_go.mp3");
     
@@ -232,7 +228,7 @@ void GameScene::saveCatInfoCsv()
     
     catInfosForSaving.clear();
 }
-void GameScene::loadCatInfoCsv()
+void GameScene::loadCatInfoCsv(std::string csvSrc)
 {
     catInfosForLoading.clear();
 
@@ -246,7 +242,7 @@ void GameScene::loadCatInfoCsv()
     
     Data datas = FileUtils::getInstance()->getDataFromFile(fullPath);
 #else
-    Data datas = FileUtils::getInstance()->getDataFromFile("res/stage/stage_1.csv");
+    Data datas = FileUtils::getInstance()->getDataFromFile(csvSrc);
 #endif
     
     CatInfo* buffer = (CatInfo*) datas.getBytes();
@@ -260,29 +256,6 @@ void GameScene::loadCatInfoCsv()
         
         catInfosForLoading.push_back(ci);
     }
-}
-void GameScene::updateCat(float dt)
-{
-    if(catInfosForLoading.empty())
-    {
-        unschedule(schedule_selector(GameScene::updateCat));
-        
-        return;
-    }
-    
-    CatInfo frontCatInfo = catInfosForLoading.front();
-    
-    if( timer + dt >= frontCatInfo.intervalTime )
-    {
-        makeCatInRoad(vs.height*0.5, (eTouchType)frontCatInfo.type);
-    
-        catInfosForLoading.pop_front();
-        timer = 0.0;
-    }
-    else
-        timer += dt;
-    
-    
 }
 void GameScene::makeCatInRoad(float initPosY, eTouchType type)
 {
@@ -338,8 +311,10 @@ void GameScene::removeFrontCat()
         this->addChild(GameOver::create());
 #endif
 }
+
 void GameScene::modeChange()
 {
+#ifdef __MAKING_MODE
     if(modeLabel->getTag() == eModeType::PLAYING)
     {
         //SAVING 모드 일 때
@@ -356,7 +331,7 @@ void GameScene::modeChange()
         unscheduleUpdate();
         
         saveCatInfoCsv();
-        loadCatInfoCsv();
+        loadCatInfoCsv("write_cat_info.csv");
         
         schedule(schedule_selector(GameScene::updateCat));
         
@@ -365,6 +340,7 @@ void GameScene::modeChange()
     }
     
     timer = 0.0;
+#endif
 }
 void GameScene::playCorrectEffect(eComboType type)
 {
@@ -503,5 +479,123 @@ bool EasyScene::init()
     if(!GameScene::init())
         return false;
     
+    loadCatInfoCsv("res/stage/easy.csv");
+    
     return true;
+}
+void EasyScene::updateCat(float dt)
+{
+    if(catInfosForLoading.empty())
+    {
+        unschedule(schedule_selector(GameScene::updateCat));
+        
+        return;
+    }
+    
+    CatInfo frontCatInfo = catInfosForLoading.front();
+    
+    if( timer + dt >= frontCatInfo.intervalTime )
+    {
+        makeCatInRoad(vs.height*0.5, (eTouchType)frontCatInfo.type);
+        
+        catInfosForLoading.pop_front();
+        timer = 0.0;
+    }
+    else
+        timer += dt;
+}
+
+
+Scene* TutorialScene::createScene()
+{
+    // 'scene' is an autorelease object
+    auto scene = Scene::create();
+    
+    // 'layer' is an autorelease object
+    auto layer = TutorialScene::create();
+    
+    // add layer as a child to scene
+    scene->addChild(layer);
+    
+    // return the scene
+    return scene;
+}
+
+bool TutorialScene::init()
+{
+    if(!GameScene::init())
+        return false;
+    
+    loadCatInfoCsv("res/stage/easy.csv");
+    
+    tutorialStep = 1;
+    
+    return true;
+}
+void TutorialScene::showTutorialByStep()
+{
+    Director::getInstance()->pause();
+    
+    auto back = Sprite::create("res/tutorial/filter.png");
+    
+    back->setPosition(vs.width*0.5f,vs.height*0.5f);
+    
+    addChild(back,-8);
+    
+    Label* descriptLabel;
+    auto arrowSpr = Sprite::create("res/tutorial/pointer.png");
+    
+    if(tutorialStep == 1)
+    {
+        descriptLabel = Label::createWithTTF("고양이가 물고기와 만나면 화면을 터치해서 먹이를 주세요",
+                                                  "fonts/kr_font.ttf",
+                                                  16.0f);
+        
+        arrowSpr->setPosition(400,vs.height - 112.0f);
+    }
+    else if(tutorialStep == 2)
+    {
+        descriptLabel = Label::createWithTTF("무늬가 '있는' 고양이가 나오면 오른쪽을 터치해 주세요",
+                                             "fonts/kr_font.ttf",
+                                             16.0f);
+        
+        arrowSpr->setPosition(400,vs.height - 112.0f);
+    }
+    else if( tutorialStep == 3 )
+    {
+        descriptLabel = Label::createWithTTF("무늬가 '없는' 고양이가 나오면 왼쪽을 터치해 주세요",
+                                             "fonts/kr_font.ttf",
+                                             16.0f);
+        
+        arrowSpr->setPosition(79.0f,vs.height - 112.0f);
+    }
+    
+    addChild(arrowSpr);
+    
+    descriptLabel->setAdditionalKerning(10.0f);
+    descriptLabel->setPosition(vs.width*0.5f, vs.height - 60.0f);
+    addChild(descriptLabel);
+}
+
+void TutorialScene::updateCat(float dt)
+{
+    if(catInfosForLoading.empty())
+    {
+        unschedule(schedule_selector(GameScene::updateCat));
+        
+        return;
+    }
+    
+    CatInfo frontCatInfo = catInfosForLoading.front();
+    
+    if( timer + dt >= frontCatInfo.intervalTime )
+    {
+        makeCatInRoad(vs.height*0.5, (eTouchType)frontCatInfo.type);
+        
+        showTutorialByStep();
+        catInfosForLoading.pop_front();
+        timer = 0.0;
+    }
+    else
+        timer += dt;
 }

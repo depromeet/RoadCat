@@ -98,6 +98,8 @@ bool MainScene::init()
     auto descriptionItem = MenuItemImage::create("res/main/description_menu.png",
                                                   "res/main/description_menu.png",
                                                  [](Ref* sender){
+                                                     SimpleAudioEngine::getInstance()->stopBackgroundMusic();
+                                                     Director::getInstance()->replaceScene(TransitionSlideInR::create(1.0f, TutorialScene::createScene()));
                                                  });
     
     auto startItem = MenuItemImage::create("res/main/start_menu.png",

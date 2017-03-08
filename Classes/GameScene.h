@@ -6,7 +6,7 @@
 class GameOver : public cocos2d::Layer
 {
     cocos2d::Label* successScore;
-    
+    float dtSum;
 public:
     bool init();
     
@@ -22,6 +22,7 @@ struct CatInfo
 
 class GameScene : public cocos2d::Layer
 {
+protected:
     double timer;
     double startInitialTime;
     cocos2d::Label* modeLabel;
@@ -51,15 +52,30 @@ public:
     void touchScreen(eTouchType type);
     
     void makeCatInRoad(float initPosY, eTouchType type);
-    void loadCatInfoCsv();
+    virtual void loadCatInfoCsv(std::string csvSrc);
     void saveCatInfoCsv();
     
     eComboType checkComboInPanel(cocos2d::Vec2 catPos);
     
-    void updateCat(float dt);
+    virtual void updateCat(float dt) = 0;
+    
     void playCorrectEffect(eComboType type);
     
     void removeFrontCat();
+};
+
+class TutorialScene : public GameScene
+{
+    int tutorialStep;
+public:
+    bool init() override;
+    
+    static cocos2d::Scene* createScene();
+    
+    void updateCat(float dt) override;
+    void showTutorialByStep();
+    
+    CREATE_FUNC(TutorialScene);
 };
 
 class EasyScene : public GameScene
@@ -68,6 +84,8 @@ public:
     bool init() override;
 
     static cocos2d::Scene* createScene();
+    
+    void updateCat(float dt) override;
     
     CREATE_FUNC(EasyScene);
 };
