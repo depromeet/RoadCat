@@ -572,7 +572,7 @@ void TutorialScene::showTutorialByStep()
     
     addChild(arrowSpr);
     
-    descriptLabel->setAdditionalKerning(10.0f);
+    descriptLabel->setAdditionalKerning(5.0f);
     descriptLabel->setPosition(vs.width*0.5f, vs.height - 60.0f);
     addChild(descriptLabel);
 }
