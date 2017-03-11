@@ -3,12 +3,20 @@
 
 #include "cocos2d.h"
 
+struct GameOverInfos
+{
+    int score;
+    int miss;
+    int combo;
+};
 class GameOver : public cocos2d::Layer
 {
-    cocos2d::Label* successScore;
-    float dtSum;
+    cocos2d::Label* score;
+    cocos2d::Label* miss;
+    cocos2d::Label* combo;
 public:
     bool init();
+    void setGameOverInfos(const GameOverInfos& gameOverInfos);
     
     void update(float dt);
 
@@ -35,6 +43,12 @@ protected:
     
     //visibleSize
     cocos2d::Size vs;
+    
+    cocos2d::Label* scoreLabel;
+    int score;
+    
+    int combo;
+    int miss;
 public:
     enum eModeType{ PLAYING, SAVING };
     enum eTouchType{ RED, BLUE };
@@ -60,6 +74,9 @@ public:
     virtual void updateCat(float dt) = 0;
     
     void playCorrectEffect(eComboType type);
+    void playerCorrect(eComboType type);
+    
+    virtual bool onTouchBegan(cocos2d::Touch* touch, cocos2d::Event* event);
     
     void removeFrontCat();
 };
@@ -72,6 +89,9 @@ public:
     
     static cocos2d::Scene* createScene();
     
+    bool onTouchBegan(cocos2d::Touch* touch, cocos2d::Event* event) override;
+    
+    void checkTutotialLayer(float dt);
     void updateCat(float dt) override;
     void showTutorialByStep();
     

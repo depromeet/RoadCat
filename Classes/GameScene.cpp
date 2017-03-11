@@ -9,6 +9,13 @@ USING_NS_CC;
 using namespace ui;
 using namespace CocosDenshion;
 
+
+void GameOver::setGameOverInfos(const GameOverInfos& gameOverInfos)
+{
+    score->setString(StringUtils::format("%d",gameOverInfos.score));
+    combo->setString(StringUtils::format("%d",gameOverInfos.combo));
+    miss->setString(StringUtils::format("%d",gameOverInfos.miss));
+}
 bool GameOver::init()
 {
     if(!Layer::init())
@@ -52,13 +59,24 @@ bool GameOver::init()
     
     addChild(totalBack);
     
-    successScore = Label::createWithTTF("0", "fonts/main_font.ttf", 25.0f);
+    score = Label::createWithTTF("0", "fonts/main_font.ttf", 25.0f,Size(150.0f,30.0f),TextHAlignment::RIGHT);
     
-    successScore->setPosition(110.0f,100.0f);
-    successScore->setAlignment(TextHAlignment::RIGHT);
-    successScore->setColor(Color3B::BLACK);
+    score->setPosition(110.0f,50.0f);
+    score->enableOutline(Color4B::BLACK,1);
     
-    totalBack->addChild(successScore);
+    miss = Label::createWithTTF("0", "fonts/main_font.ttf", 25.0f,Size(150.0f,30.0f),TextHAlignment::RIGHT);
+    
+    miss->setPosition(110.0f,90.0f);
+    miss->enableOutline(Color4B::BLACK,1);
+    
+    combo = Label::createWithTTF("0", "fonts/main_font.ttf", 25.0f,Size(150.0f,30.0f),TextHAlignment::RIGHT);
+    
+    combo->setPosition(110.0f,130.0f);
+    combo->enableOutline(Color4B::BLACK,1);
+    
+    totalBack->addChild(score);
+    totalBack->addChild(miss);
+    totalBack->addChild(combo);
     
     scheduleUpdate();
     
@@ -67,8 +85,6 @@ bool GameOver::init()
 
 void GameOver::update(float dt)
 {
-    dtSum += dt;
-    successScore->setString(StringUtils::format("%.1f",dtSum));
 }
 
 // on "init" you need to initialize your instance
@@ -113,17 +129,7 @@ bool GameScene::init()
     
     auto listener = EventListenerTouchOneByOne::create();
     
-    listener->onTouchBegan = [&](Touch* touch, Event* event){
-        auto touchPos = touch->getLocation();
-        auto visibleWidth = Director::getInstance()->getVisibleSize().width;
-        
-        if(visibleWidth*0.5 >= touchPos.x)
-            touchScreen(eTouchType::RED);
-        else
-            touchScreen(eTouchType::BLUE);
-        
-        return true;
-    };
+    listener->onTouchBegan = CC_CALLBACK_2(GameScene::onTouchBegan,this);
     
     _eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
     
@@ -161,7 +167,18 @@ bool GameScene::init()
     
     return true;
 }
-
+bool GameScene::onTouchBegan(Touch* touch, Event* event)
+{
+    auto touchPos = touch->getLocation();
+    auto visibleWidth = Director::getInstance()->getVisibleSize().width;
+    
+    if(visibleWidth*0.5 >= touchPos.x)
+        touchScreen(eTouchType::RED);
+    else
+        touchScreen(eTouchType::BLUE);
+    
+    return true;
+}
 void GameScene::onEnterTransitionDidFinish()
 {
     Layer::onEnterTransitionDidFinish();
@@ -291,7 +308,7 @@ void GameScene::makeCatInRoad(float initPosY, eTouchType type)
     spr->runAction(RepeatForever::create(Animate::create(animation)));
     
     auto seq = Sequence::create(movAction,CallFunc::create([this](){
-        this->playCorrectEffect(eComboType::NONE);
+        this->playerCorrect(eComboType::NONE);
         this->removeFrontCat();
     }),nullptr);
     
@@ -299,6 +316,22 @@ void GameScene::makeCatInRoad(float initPosY, eTouchType type)
     
     addChild(spr);
     catSprList.push_back(spr);
+    
+    score = 0;
+    
+    scoreLabel = Label::createWithTTF("0", "fonts/main_font.ttf", 25.0f,Size(400,30.0f), TextHAlignment::RIGHT);
+    auto scoreCS = scoreLabel->getContentSize();
+    
+    scoreLabel->enableOutline(Color4B::ORANGE,1);
+    scoreLabel->setPosition(vs.width - scoreCS.width*0.5f, vs.height - scoreCS.height*0.5f);
+    
+    addChild(scoreLabel);
+    
+    ////
+    
+    combo = 0;
+    
+    miss = 0;
 }
 void GameScene::removeFrontCat()
 {
@@ -308,7 +341,18 @@ void GameScene::removeFrontCat()
     //게임 오버.
 #ifndef __MAKING_MODE
     if(catSprList.empty())
-        this->addChild(GameOver::create());
+    {
+        auto gameOver = GameOver::create();
+        
+        GameOverInfos gameOverInfos;
+        
+        gameOverInfos.combo = combo;
+        gameOverInfos.score = score;
+        gameOverInfos.miss = miss;
+        
+        gameOver->setGameOverInfos(gameOverInfos);
+        this->addChild(gameOver);
+    }
 #endif
 }
 
@@ -341,6 +385,50 @@ void GameScene::modeChange()
     
     timer = 0.0;
 #endif
+}
+void GameScene::playerCorrect(eComboType type)
+{
+    playCorrectEffect(type);
+    
+    switch(type)
+    {
+        case eComboType::GOOD:
+            score += 10;
+            break;
+        case eComboType::EXCELLENT:
+            score += 20;
+            break;
+        case eComboType::PERFECT:
+            score += 30;
+            break;
+    }
+    
+    if(type != eComboType::NONE)
+    {
+        combo++;
+        
+        auto comboFormat = StringUtils::format("Combo %d",combo);
+        auto comboLabel = Label::createWithTTF(comboFormat, "fonts/arial.ttf", 50.0f);
+        
+        auto moveAct = MoveBy::create(0.5f, Vec2(0,30.0f));
+        auto comboAct = Sequence::create(moveAct,RemoveSelf::create(), NULL);
+        
+        comboLabel->setColor(Color3B::MAGENTA);
+        comboLabel->enableItalics();
+        comboLabel->enableOutline(Color4B::BLACK,2);
+        comboLabel->runAction(comboAct);
+        
+        comboLabel->setPosition(vs.width*0.5, vs.height*0.5);
+        
+        addChild(comboLabel);
+    }
+    else
+    {
+        combo = 0;
+        miss++;
+    }
+    
+    scoreLabel->setString(StringUtils::format("%d",score));
 }
 void GameScene::playCorrectEffect(eComboType type)
 {
@@ -404,21 +492,20 @@ void GameScene::touchScreen(eTouchType type)
         if(catSprList.empty())
             return;
         
-        
         eComboType comboType = checkComboInPanel(catSprList.front()->getPosition());
         
         if(comboType != eComboType::NONE) //맞췄으면
         {
             if(catSprList.front()->getTag() != type)
             {
-                playCorrectEffect(eComboType::NONE);
+                playerCorrect(eComboType::NONE);
             }
             else
             {
                 auto seq = Sequence::create(Blink::create(0.5f, 5), Show::create(), NULL);
                 panelCatSpr->runAction(seq);
                 
-                playCorrectEffect((eComboType)comboType);
+                playerCorrect((eComboType)comboType);
             }
             removeFrontCat();
         }
@@ -530,7 +617,15 @@ bool TutorialScene::init()
     
     tutorialStep = 1;
     
+    schedule(schedule_selector(TutorialScene::checkTutotialLayer));
+    
     return true;
+}
+void TutorialScene::checkTutotialLayer(float dt)
+{
+    if(!catSprList.empty())
+        if(checkComboInPanel(catSprList.front()->getPosition()))
+            showTutorialByStep();
 }
 void TutorialScene::showTutorialByStep()
 {
@@ -539,6 +634,7 @@ void TutorialScene::showTutorialByStep()
     auto back = Sprite::create("res/tutorial/filter.png");
     
     back->setPosition(vs.width*0.5f,vs.height*0.5f);
+    back->setName("tutorial_layer");
     
     addChild(back,-8);
     
@@ -566,17 +662,33 @@ void TutorialScene::showTutorialByStep()
         descriptLabel = Label::createWithTTF("무늬가 '없는' 고양이가 나오면 왼쪽을 터치해 주세요",
                                              "fonts/kr_font.ttf",
                                              16.0f);
-        
+        arrowSpr->setFlippedX(true);
         arrowSpr->setPosition(79.0f,vs.height - 112.0f);
     }
     
-    addChild(arrowSpr);
+    back->addChild(arrowSpr);
     
-    descriptLabel->setAdditionalKerning(5.0f);
+    //descriptLabel->setAdditionalKerning(5.0f);
     descriptLabel->setPosition(vs.width*0.5f, vs.height - 60.0f);
-    addChild(descriptLabel);
+    back->addChild(descriptLabel);
 }
 
+bool TutorialScene::onTouchBegan(Touch* touch, Event* event)
+{
+    if(!GameScene::onTouchBegan(touch, event))
+        return false;
+    
+    auto tutorialLayer = getChildByName("tutorial_layer");
+    
+    if(tutorialLayer != nullptr) //튜토리얼을 보고 있는 상태면
+    {
+        removeChild(tutorialLayer);
+        Director::getInstance()->resume();
+        tutorialStep++;
+    }
+    
+    return true;
+}
 void TutorialScene::updateCat(float dt)
 {
     if(catInfosForLoading.empty())
@@ -592,10 +704,10 @@ void TutorialScene::updateCat(float dt)
     {
         makeCatInRoad(vs.height*0.5, (eTouchType)frontCatInfo.type);
         
-        showTutorialByStep();
         catInfosForLoading.pop_front();
         timer = 0.0;
     }
     else
         timer += dt;
+
 }
